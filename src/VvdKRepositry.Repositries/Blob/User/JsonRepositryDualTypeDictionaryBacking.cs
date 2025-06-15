@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using VvdKRepositry.Repositries.Contracts.Blob.User;
 
@@ -8,8 +9,8 @@ public abstract class JsonRepositryDualTypeDictionaryBacking<T,T1,T2>(
     JsonSerializerOptions jsonSerializerOptions)
     : JsonRepositryBaseBacking<Dictionary<int,T>>(persistence, jsonSerializerOptions),
         IReadDualTypeDictionaryRepository<T,T1,T2>,
-        IWriteRepository<T>
-    where T : EntityWithIntId
+        IWriteDualTypeRepository<int,T1,T2>
+    where T : EntityWithId<int>
     where T1:T
     where T2:T
 {
@@ -19,6 +20,39 @@ public abstract class JsonRepositryDualTypeDictionaryBacking<T,T1,T2>(
 
     public IReadOnlyDictionary<int, T1> T1All => _contentType1 ?? [];
     public IReadOnlyDictionary<int, T2> T2All => _contentType2 ?? [];
+    public IEnumerable<T> All
+    {
+        get
+        {
+            if (_contentType1?.Values is { } first && _contentType2?.Values is { } second)
+                return first.Concat<T>(second);
+            if (_contentType1?.Values is { } onlyFirst)
+                return onlyFirst;
+            if (_contentType2?.Values is { } onlySecond)
+                return onlySecond;
+            return [];
+        }
+    }
+      
+    public bool TryGet(int id,[NotNullWhen(true)] out T value)
+    {
+        if (_contentType1 != null && _contentType1.TryGetValue(id, out var t1))
+        {
+            value = t1;
+            return true;
+        }
+        if (_contentType2 != null && _contentType2.TryGetValue(id, out var t2))
+        {
+            value = t2;
+            return true;
+        }
+        value = null!;
+        return false;
+    }
+
+    public IReadOnlyDictionary<int, T> Dictionary =>
+        Content;
+    
     protected override Dictionary<int,T> Content
     {
         get
@@ -43,52 +77,52 @@ public abstract class JsonRepositryDualTypeDictionaryBacking<T,T1,T2>(
         }
     }
 
-    public virtual T Add(T entity)
+    [MemberNotNull("_contentType1", "_contentType2")]
+    private TEntity UpdateId<TEntity>(TEntity entity)
+        where TEntity : EntityWithId<int>
     {
-        if (_contentType1 == null || _contentType2 == null)
-            throw new InvalidOperationException("Content dictionaries are not initialized. Ensure you have loaded the content before adding entities.");
-        
-        var newEntity = entity.Id == 0
+        if(_contentType1 == null || _contentType2 == null)
+            throw new InvalidOperationException("Content dictionaries are not initialized. Ensure you have loaded the content before updating entities.");
+        return entity.Id == 0
             ? entity with
             {
                 Id = Math.Max(
-                   _contentType1.Keys.Max(),
-                     _contentType2.Keys.Max()
-                )+1,
+                    _contentType1.Count != 0 ? _contentType1.Keys.Max() : 0,
+                    _contentType2.Count != 0 ? _contentType2.Keys.Max() : 0
+                )+1
             }
             : entity;
-        
-        switch (entity)
-        {
-            case T1 t1:
-                _contentType1[entity.Id] = t1;
-                break;
-            case T2 t2:
-                _contentType2[entity.Id] = t2;
-                break;
-            default:
-                throw new ArgumentException($"Unsupported type {typeof(T)} for dual type repository.");
-        }
-        Dirty = true;
-        return newEntity;
     }
 
-    public virtual void Update(T entity)
+    public T1 Add(T1 entity)
     {
-        if (_contentType1 == null || _contentType2 == null)
+        entity =UpdateId(entity);
+        _contentType1[entity.Id] = UpdateId(entity);
+        Dirty = true;
+        return entity;
+    }
+
+    public T2 Add(T2 entity)
+    {
+        entity =UpdateId(entity);
+        _contentType2[entity.Id] = UpdateId(entity);
+        Dirty = true;
+        return entity;
+    }
+
+    public virtual void Update(T1 entity)
+    {
+        if (_contentType1 == null)
             throw new InvalidOperationException("Content dictionaries are not initialized. Ensure you have loaded the content before updating entities.");
-        
-        switch (entity)
-        {
-            case T1 t1:
-                _contentType1[entity.Id] = t1;
-                break;
-            case T2 t2:
-                _contentType2[entity.Id] = t2;
-                break;
-            default:
-                throw new ArgumentException($"Unsupported type {typeof(T)} for dual type repository.");
-        }
+        _contentType1[entity.Id] = entity;
+        Dirty = true;
+    }
+
+    public void Update(T2 entity)
+    {
+        if (_contentType2 == null)
+            throw new InvalidOperationException("Content dictionaries are not initialized. Ensure you have loaded the content before updating entities.");
+        _contentType2[entity.Id] = entity;
         Dirty = true;
     }
 

@@ -16,7 +16,7 @@ obj/
 *.tmp
 *.temp
 
-output/
+artefacts/
 
 # Rider project files
 .idea/

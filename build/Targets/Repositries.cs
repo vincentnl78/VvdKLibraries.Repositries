@@ -1,9 +1,11 @@
 ﻿
-using DefaultNamespace;
-using Microsoft.Build.Utilities;
-using Nuke.Common;
 // ReSharper disable InconsistentNaming
 
+
+
+using Nuke.Common;
+
+// ReSharper disable once CheckNamespace
 partial class Build
 {
     readonly BuildParameters RepositryBuildParameters = new BuildParameters
@@ -12,28 +14,20 @@ partial class Build
         ProjectName = "VvdKRepositry.Repositries"
     };
     
-    Target LoadSettings => x => x
-        .Executes(() =>
-        {
-            string json = System.IO.File.ReadAllText(RootDirectory/"build"/ "secrets.json");
-            var secrets = System.Text.Json.JsonSerializer.Deserialize<Secrets>(json);
-            GitHubOwner=secrets.GitHubOwner;
-            GitHubToken=secrets.GitHubToken;
-        });
+    
     
     Target SetBuildParameters_Repositries => x => x
         .DependsOn(LoadSettings)
         .Executes(() =>
         {
-            SetBuildParameters(RepositryBuildParameters);
+            SetParameters(RepositryBuildParameters);
         });
     
     Target SetVersionOfPackages_Repositries => x => x
         .DependsOn(SetBuildParameters_Repositries)
         .Executes(() =>
         {
-            SetBuildParameters(RepositryContractsBuildParameters);
-            System.Threading.Thread.Sleep(15000); // 15,000 ms = 15 sec
+            SetParameters(RepositryContractsBuildParameters);
             MatchVersionToOtherProject(RepositryBuildParameters,RepositryContractsBuildParameters);
             SetVersionOfPackage(
                 RepositryBuildParameters, 
@@ -50,14 +44,28 @@ partial class Build
     
     Target Restore_Repositries => x => x
         .DependsOn(Clean_Repositries)
-        .After(Publish_RepositriesContracts)
+        .After(Publish_RepositriesContracts) // Ensure contracts are published before restoring repositries
         .Executes(() =>
         {
-            Restore(RepositryBuildParameters);
+            Restore(RepositryBuildParameters,false);
+        });
+    
+    Target Compile_Repositries => x => x
+        .DependsOn(Restore_Repositries)
+        .Executes(() =>
+        {
+            Compile(RepositryBuildParameters);
+        });
+    
+    Target Test_Repositries => x => x
+        .DependsOn(Compile_Repositries)
+        .Executes(() =>
+        {
+           
         });
     
     Target Pack_Repositries => x => x
-        .DependsOn(Restore_Repositries)
+        .DependsOn(Test_Repositries)
         .Executes(() =>
         {
             Pack(RepositryBuildParameters);

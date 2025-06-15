@@ -26,6 +26,8 @@
       "enum": [
         "Clean_Repositries",
         "Clean_RepositriesContracts",
+        "Compile_Repositries",
+        "Compile_RepositriesContracts",
         "IncreaseVersion_RepositriesContracts",
         "LoadSettings",
         "Pack_Repositries",
@@ -33,9 +35,12 @@
         "Publish_Repositries",
         "Publish_RepositriesContracts",
         "Restore_Repositries",
+        "Restore_RepositriesContracts",
         "SetBuildParameters_Repositries",
-        "SetBuildParameters_RepositriesContracts",
-        "SetVersionOfPackages_Repositries"
+        "SetParameters_RepositriesContracts",
+        "SetVersionOfPackages_Repositries",
+        "Test_Repositries",
+        "Test_RepositriesContracts"
       ]
     },
     "Verbosity": {

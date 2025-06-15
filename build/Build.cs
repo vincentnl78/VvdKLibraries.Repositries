@@ -1,8 +1,10 @@
+using System.IO;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
+
 
 // ReSharper disable InconsistentNaming
 
@@ -22,11 +24,18 @@ partial class Build : NukeBuild
     [Parameter]public string GitHubToken;
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
-    AbsolutePath OutputDirectory => RootDirectory / "output";
+    AbsolutePath ArtefactsOutputDirectory => RootDirectory / "artefacts";
     
+    Target LoadSettings => x => x
+        .Executes(() =>
+        {
+            string json = File.ReadAllText(RootDirectory/"build"/ "secrets.json");
+            var secrets = System.Text.Json.JsonSerializer.Deserialize<Secrets>(json);
+            GitHubOwner=secrets.GitHubOwner;
+            GitHubToken=secrets.GitHubToken;
+        });
     
-    
-    void SetBuildParameters(BuildParameters parameters)
+    void SetParameters(BuildParameters parameters)
     {
         var projectfile = SourceDirectory / parameters.ProjectFilePath;
         parameters.Version= XmlTasks.XmlPeek(projectfile, "/Project/PropertyGroup/Version").First();
@@ -37,38 +46,63 @@ partial class Build : NukeBuild
     
     void Clean(BuildParameters buildParameters)
     {
-        var folder = OutputDirectory / buildParameters.PackageName;
-        folder.CreateOrCleanDirectory();
+        var buildFolder = ArtefactsOutputDirectory / buildParameters.PackageName;
+        buildFolder.CreateOrCleanDirectory();
+        
+        var packagesFolder = ArtefactsOutputDirectory / buildParameters.PackageName;
+        packagesFolder.CreateOrCleanDirectory();
     }
     
-    void Restore(BuildParameters buildParameters)
+    void Restore(BuildParameters buildParameters, bool useCache)
     {
-        var cmd = $"restore";
-        ProcessTasks.StartProcess(
-                "dotnet",
-                cmd,
-                SourceDirectory/buildParameters.ProjectFolder)
-            .AssertZeroExitCode();
+        if (useCache)
+        {
+            DotNetTasks.DotNetRestore(s => s
+                .SetProjectFile(SourceDirectory / buildParameters.ProjectFilePath)
+            );
+        }
+        else
+        {
+            DotNetTasks.DotNetRestore(s=>s
+                .SetProcessWorkingDirectory(SourceDirectory / buildParameters.ProjectFolder)
+                .SetNoCache(true)
+                .SetIgnoreFailedSources(false)
+            );    
+        }
     }
     
+    void Compile(BuildParameters buildParameters)
+    {
+        DotNetTasks.DotNetBuild(s => s
+            .SetProjectFile(SourceDirectory / buildParameters.ProjectFilePath)
+            .SetConfiguration(Configuration)
+            //.SetOutputDirectory(BuildOutputDirectory / buildParameters.PackageName)
+            .EnableNoRestore()
+            .EnableNoLogo()
+            .EnableNoIncremental()
+            .SetProcessWorkingDirectory(SourceDirectory / buildParameters.ProjectFolder)
+        );
+    }
     void Pack(BuildParameters buildParameters)
     {
         DotNetTasks.DotNetPack(s=> s
             .SetProject(SourceDirectory / buildParameters.ProjectFilePath)
             .SetConfiguration(Configuration)
-            .SetOutputDirectory(OutputDirectory / buildParameters.PackageName)
+            .SetOutputDirectory(ArtefactsOutputDirectory / buildParameters.PackageName)
             .EnableIncludeSymbols()
             .EnableIncludeSource()
+            .EnableNoBuild()
+            .EnableNoRestore()
             .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
             .SetVersion(buildParameters.Version)
-            .SetProcessWorkingDirectory(SourceDirectory/ buildParameters.ProjectFolder)
+            //.SetProcessWorkingDirectory(SourceDirectory/ buildParameters.ProjectFolder)
         );
     }
 
     void Publish(BuildParameters buildParameters)
     {
-        var nupkgs = OutputDirectory / buildParameters.PackageName / buildParameters.PackageName+"." +buildParameters.Version +".nupkg";
-        var snupkgs = OutputDirectory / buildParameters.PackageName / buildParameters.PackageName+"."+buildParameters.Version +".snupkg";
+        var nupkgs = ArtefactsOutputDirectory / buildParameters.PackageName / buildParameters.PackageName+"." +buildParameters.Version +".nupkg";
+        var snupkgs = ArtefactsOutputDirectory / buildParameters.PackageName / buildParameters.PackageName+"."+buildParameters.Version +".snupkg";
         Push(nupkgs);
         Push(snupkgs);
 

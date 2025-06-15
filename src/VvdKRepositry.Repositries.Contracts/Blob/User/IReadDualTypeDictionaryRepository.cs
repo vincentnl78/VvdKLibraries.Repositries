@@ -1,12 +1,11 @@
-using System.Linq.Expressions;
-
 namespace VvdKRepositry.Repositries.Contracts.Blob.User;
 
-public interface IReadDualTypeDictionaryRepository<TEntity,TEntity1,TEntity2> : ILoadable
-    where TEntity : class, IIntId
-    where TEntity1 : TEntity
-    where TEntity2 : TEntity
+public interface IReadDualTypeDictionaryRepository<T,T1,T2>:
+    IReadDictionaryRepository<int,T> 
+    where T : class, IId<int>
+    where T1 : class,T,IId<int>
+    where T2 : class,T,IId<int>
 {
-    IReadOnlyDictionary<int,TEntity1> T1All { get; }
-    IReadOnlyDictionary<int,TEntity2> T2All { get; }
+    IReadOnlyDictionary<int,T1> T1All { get; }
+    IReadOnlyDictionary<int,T2> T2All { get; }
 }

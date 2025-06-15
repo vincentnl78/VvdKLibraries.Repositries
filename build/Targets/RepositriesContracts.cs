@@ -1,7 +1,7 @@
-﻿
+﻿// ReSharper disable InconsistentNaming
 using Nuke.Common;
-// ReSharper disable InconsistentNaming
 
+// ReSharper disable once CheckNamespace
 partial class Build
 {
     readonly BuildParameters RepositryContractsBuildParameters = new BuildParameters
@@ -10,14 +10,15 @@ partial class Build
         ProjectName = "VvdKRepositry.Repositries.Contracts"
     };
     
-    Target SetBuildParameters_RepositriesContracts => x => x
+    Target SetParameters_RepositriesContracts => x => x
+        .DependsOn(LoadSettings)
         .Executes(() =>
         {
-            SetBuildParameters(RepositryContractsBuildParameters);
+            SetParameters(RepositryContractsBuildParameters);
         });
     
     Target IncreaseVersion_RepositriesContracts => x => x
-        .DependsOn(SetBuildParameters_RepositriesContracts)
+        .DependsOn(SetParameters_RepositriesContracts)
         .Executes(() =>
         {
             BumpVersion(RepositryContractsBuildParameters);
@@ -28,10 +29,32 @@ partial class Build
         .Executes(() =>
         {
             Clean(RepositryContractsBuildParameters);
+            //CleanPackageFiles(RepositryContractsBuildParameters);
+        });
+
+    Target Restore_RepositriesContracts => x => x
+        .DependsOn(Clean_RepositriesContracts)
+        .Executes(() =>
+        {
+            Restore(RepositryContractsBuildParameters,true);
+        });
+    
+    Target Compile_RepositriesContracts => x => x
+        .DependsOn(Restore_RepositriesContracts)
+        .Executes(() =>
+        {
+            Compile(RepositryContractsBuildParameters);
+        });
+    
+    Target Test_RepositriesContracts => x => x
+        .DependsOn(Compile_RepositriesContracts)
+        .Executes(() =>
+        {
+           
         });
     
     Target Pack_RepositriesContracts => x => x
-        .DependsOn(Clean_RepositriesContracts)
+        .DependsOn(Test_RepositriesContracts)
         .Executes(() =>
         {
             Pack(RepositryContractsBuildParameters);

@@ -3,16 +3,17 @@ using VvdKRepositry.Repositries.Contracts.Blob.User;
 
 namespace VvdKRepositry.Repositries.Blob.User;
 
-public abstract class JsonRepositryDictionaryBacking<T>(
+public abstract class JsonRepositryDictionaryBacking<TKey,T>(
     IUserBlobPersistence persistence,
     JsonSerializerOptions jsonSerializerOptions)
-    : JsonRepositryBaseBacking<Dictionary<int,T>>(persistence, jsonSerializerOptions),
-        IReadDictionaryRepository<T>,
-        IWriteRepository<T>
-    where T : EntityWithIntId
+    : JsonRepositryBaseBacking<Dictionary<TKey,T>>(persistence, jsonSerializerOptions),
+        IReadDictionaryRepository<TKey,T>,
+        IWriteRepository<TKey,T>
+    where T: IId<TKey>
+    where TKey : struct
 {
-    private Dictionary<int,T>? _content;
-    protected override Dictionary<int,T> Content
+    private Dictionary<TKey,T>? _content;
+    protected override Dictionary<TKey,T> Content
     {
         get => _content ??= [];
         set
@@ -22,35 +23,44 @@ public abstract class JsonRepositryDictionaryBacking<T>(
         }
     }
 
-    public IReadOnlyDictionary<int, T> All => Content;
+    public IReadOnlyDictionary<TKey, T> Dictionary => Content;
 
-    public T? GetById(int id)
+    public IEnumerable<T> All => Content.Values;
+    public bool TryGet(TKey id, out T value)
     {
-        return Content.TryGetValue(id, out var entity) ? entity : null;
+        if (Content.TryGetValue(id, out var entity))
+        {
+            value = entity;
+            return true;
+        }
+        
+        value = default!;
+        return false;
     }
 
     public virtual T Add(T entity)
     {
-        var newEntity = entity.Id == 0
-            ? entity with
-            {
-                Id = Content.Any()
-                    ? Content.Keys.Max() + 1
-                    : 1
-            }
-            : entity;
-        Content.Add(newEntity.Id, newEntity);
+        Content.Add(entity.Id, entity);
         Dirty = true;
-        return newEntity;
+        return entity;
     }
-
+    
     public virtual void Update(T entity)
     {
         Content[entity.Id] = entity;
         Dirty = true;
     }
 
-    public void Remove(int id)
+    public virtual void Update(IEnumerable<T> entity)
+    {
+        foreach (var item in entity)
+        {
+            Content[item.Id] = item;
+        }
+        Dirty = true;
+    }
+
+    public void Remove(TKey id)
     {
         if (Content.Remove(id))
         {

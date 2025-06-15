@@ -9,7 +9,7 @@ namespace VvdKRepositry.Repositries.Blob.User;
 public abstract class JsonRepositryBaseBacking<T>(
     IUserBlobPersistence userBlobPersistence,
     JsonSerializerOptions jsonSerializerOptions)
-    :UserBlobRepositry(userBlobPersistence), IBaseBacking<T>,IRepositryWorkNotifications,ILockableByLease
+    :UserBlobRepositry(userBlobPersistence), IBaseBacking,IRepositryWorkNotifications,ILockableByLease
     where T : new()
 {
     private string? _leaseId;
@@ -20,20 +20,7 @@ public abstract class JsonRepositryBaseBacking<T>(
     public bool IsLoaded { get; private set; }
 
     protected abstract T Content { get; set; }
-    
-    // protected TInterface Content
-    // {
-    //     get => _content ??= new TImplementation();
-    //     set
-    //     {
-    //         _content = value;
-    //         Dirty = true;
-    //     }
-    // }
-
     public bool Dirty { get; set; }
-
-
     public virtual async Task LoadAsync()
     {
         try
