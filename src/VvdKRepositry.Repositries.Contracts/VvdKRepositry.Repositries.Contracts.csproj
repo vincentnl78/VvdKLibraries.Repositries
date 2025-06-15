@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <Authors>Vincent van der Kruit</Authors>
     <PackageId>VvdKLibraries.AzureRepositries.Contracts</PackageId>
-    <Version>1.1.103</Version>
+    <Version>1.1.124</Version>
     <RepositoryUrl>https://github.com/vincentnl78/VvdKLibraries.Repositries</RepositoryUrl>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

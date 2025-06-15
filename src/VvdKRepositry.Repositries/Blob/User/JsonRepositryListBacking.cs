@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using System.Text.Json;
 using VvdKRepositry.Repositries.Contracts.Blob.User;
 
@@ -8,7 +7,7 @@ public abstract class JsonRepositryListBacking<T>(
     IUserBlobPersistence persistence,
     JsonSerializerOptions jsonSerializerOptions)
     : JsonRepositryBaseBacking<List<T>>(persistence, jsonSerializerOptions),
-        IReadListRepository<T>,
+        IReadRepository<T>,
         IWriteRepository<T>
     where T : EntityWithIntId
 {

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <Authors>Vincent van der Kruit</Authors>
     <PackageId>VvdKLibraries.AzureRepositries</PackageId>
-    <Version>1.1.103</Version>
+    <Version>1.1.124</Version>
     <RepositoryUrl>https://github.com/vincentnl78/VvdKLibraries.Repositries</RepositoryUrl>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
@@ -26,6 +26,6 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.6" />
     <PackageReference Include="Scrutor" Version="6.1.0" />
     <PackageReference Include="Serilog" Version="4.3.0" />
-    <PackageReference Include="VvdKLibraries.AzureRepositries.Contracts" Version="1.1.103" />
+    <PackageReference Include="VvdKLibraries.AzureRepositries.Contracts" Version="1.1.124" />
   </ItemGroup>
 </Project>

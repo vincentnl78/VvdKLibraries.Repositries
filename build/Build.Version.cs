@@ -45,15 +45,6 @@ public partial class Build
         var coreVersion = ReadVersion(parameters);
         parameters.Version = IncrementPatchVersion(coreVersion);
         UpdateVersion(parameters, parameters.Version);
-
-
-        // if(Version.TryParse(parameters.Version, out var version))
-        // {
-        //     //var newVersion = new Version(version.Major, version.Minor, version.Build + 1);
-        //     parameters.Version = newVersion.ToString();
-        //     var projectfile = SourceDirectory / parameters.ProjectFolder / $"{parameters.ProjectName}.csproj";
-        //     XmlTasks.XmlPoke(projectfile, "/Project/PropertyGroup/Version", newVersion.ToString());
-        // }
     }
 
     void MatchVersionToOtherProject(BuildParameters repositryBuildParameters, BuildParameters referenceProjectBuildParameters)

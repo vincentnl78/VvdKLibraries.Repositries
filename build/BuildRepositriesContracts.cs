@@ -11,6 +11,7 @@ partial class Build
     };
     
     Target SetBuildParameters_RepositriesContracts => x => x
+        .DependsOn(LoadSettings)
         .Executes(() =>
         {
             SetBuildParameters(RepositryContractsBuildParameters);
@@ -28,6 +29,7 @@ partial class Build
         .Executes(() =>
         {
             Clean(RepositryContractsBuildParameters);
+            //CleanPackageFiles(RepositryContractsBuildParameters);
         });
     
     Target Pack_RepositriesContracts => x => x

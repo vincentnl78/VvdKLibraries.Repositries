@@ -22,7 +22,9 @@ public abstract class JsonRepositryDictionaryBacking<T>(
         }
     }
 
-    public IReadOnlyDictionary<int, T> All => Content;
+    public IReadOnlyDictionary<int, T> Dictionary => Content;
+
+    public IEnumerable<T> All => Content.Values;
 
     public T? GetById(int id)
     {

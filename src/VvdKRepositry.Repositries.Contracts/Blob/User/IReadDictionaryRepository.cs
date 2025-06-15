@@ -1,10 +1,7 @@
-using System.Linq.Expressions;
-
 namespace VvdKRepositry.Repositries.Contracts.Blob.User;
 
-public interface IReadDictionaryRepository<TEntity> : ILoadable
+public interface IReadDictionaryRepository<TEntity> : ILoadable, IReadRepository<TEntity>
     where TEntity : class, IIntId
 {
-    IReadOnlyDictionary<int,TEntity> All { get; }
-    TEntity? GetById(int id);
+    IReadOnlyDictionary<int,TEntity> Dictionary { get; }
 }

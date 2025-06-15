@@ -1,8 +1,10 @@
+using System.IO;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
 using Nuke.Common.Tools.DotNet;
+
 
 // ReSharper disable InconsistentNaming
 
@@ -24,7 +26,14 @@ partial class Build : NukeBuild
     AbsolutePath SourceDirectory => RootDirectory / "src";
     AbsolutePath OutputDirectory => RootDirectory / "output";
     
-    
+    Target LoadSettings => x => x
+        .Executes(() =>
+        {
+            string json = File.ReadAllText(RootDirectory/"build"/ "secrets.json");
+            var secrets = System.Text.Json.JsonSerializer.Deserialize<Secrets>(json);
+            GitHubOwner=secrets.GitHubOwner;
+            GitHubToken=secrets.GitHubToken;
+        });
     
     void SetBuildParameters(BuildParameters parameters)
     {
@@ -41,14 +50,22 @@ partial class Build : NukeBuild
         folder.CreateOrCleanDirectory();
     }
     
-    void Restore(BuildParameters buildParameters)
+    void Restore(BuildParameters buildParameters, bool useCache)
     {
-        var cmd = $"restore";
-        ProcessTasks.StartProcess(
-                "dotnet",
-                cmd,
-                SourceDirectory/buildParameters.ProjectFolder)
-            .AssertZeroExitCode();
+        if (useCache)
+        {
+            DotNetTasks.DotNetRestore(s => s
+                .SetProjectFile(SourceDirectory / buildParameters.ProjectFilePath)
+            );
+        }
+        else
+        {
+            DotNetTasks.DotNetRestore(s=>s
+                .SetProcessWorkingDirectory(SourceDirectory / buildParameters.ProjectFolder)
+                .SetNoCache(true)
+                .SetIgnoreFailedSources(false)
+            );    
+        }
     }
     
     void Pack(BuildParameters buildParameters)
