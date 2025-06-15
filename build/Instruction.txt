@@ -1,0 +1,10 @@
+﻿1. Update the version of both packages;
+
+1. In the first round publish all Contracts packages and those that do not reference other packages.
+    nuke Publish_RepositriesContracts
+
+2. Next update the other packages, to the latest reference of the Contracts packages.
+
+
+3. In the second round update all other packages
+    nuke Publish_Repositries
