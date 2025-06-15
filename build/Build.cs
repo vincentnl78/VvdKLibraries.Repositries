@@ -1,8 +1,8 @@
-using System;
 using System.Linq;
 using Nuke.Common;
 using Nuke.Common.IO;
 using Nuke.Common.Tooling;
+using Nuke.Common.Tools.DotNet;
 
 // ReSharper disable InconsistentNaming
 
@@ -15,42 +15,25 @@ partial class Build : NukeBuild
     
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
     readonly Configuration Configuration = IsLocalBuild ? Configuration.Debug : Configuration.Release;
+    
+    string GitHubSource => $"https://nuget.pkg.github.com/{GitHubOwner}/index.json";
+    
+    [Parameter]public string GitHubOwner;
+    [Parameter]public string GitHubToken;
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
-    AbsolutePath OutputDirectory => RootDirectory / "packages";
+    AbsolutePath OutputDirectory => RootDirectory / "output";
+    
     
     
     void SetBuildParameters(BuildParameters parameters)
     {
-        var projectfile = SourceDirectory / parameters.ProjectFolder / $"{parameters.ProjectName}.csproj";
+        var projectfile = SourceDirectory / parameters.ProjectFilePath;
         parameters.Version= XmlTasks.XmlPeek(projectfile, "/Project/PropertyGroup/Version").First();
         parameters.PackageName = XmlTasks.XmlPeek(projectfile, "/Project/PropertyGroup/PackageId").First();
     }
     
-    void IncreaseVersion(BuildParameters parameters)
-    {
-        if(Version.TryParse(parameters.Version, out var version))
-        {
-            var newVersion = new Version(version.Major, version.Minor, version.Build + 1);
-            parameters.Version = newVersion.ToString();
-            var projectfile = SourceDirectory / parameters.ProjectFolder / $"{parameters.ProjectName}.csproj";
-            XmlTasks.XmlPoke(projectfile, "/Project/PropertyGroup/Version", newVersion.ToString());
-        }
-    }
     
-    void SetVersion(BuildParameters repositryBuildParameters, BuildParameters referenceProjectBuildParameters)
-    {
-        repositryBuildParameters.Version= referenceProjectBuildParameters.Version;
-        var repositryProjectfile = SourceDirectory / repositryBuildParameters.ProjectFolder / $"{repositryBuildParameters.ProjectName}.csproj";
-        XmlTasks.XmlPoke(repositryProjectfile, "/Project/PropertyGroup/Version", referenceProjectBuildParameters.Version);
-    }
-    
-    void SetVersionOfPackage(BuildParameters repositryBuildParameters, BuildParameters referenceProjectBuildParameters)
-    {
-        var repositryProjectfile = SourceDirectory / repositryBuildParameters.ProjectFolder / $"{repositryBuildParameters.ProjectName}.csproj";
-        XmlTasks.XmlPoke(repositryProjectfile, $"//PackageReference[@Include='{referenceProjectBuildParameters.PackageName}']/@Version", referenceProjectBuildParameters.Version);
-        
-    }
     
     void Clean(BuildParameters buildParameters)
     {
@@ -70,28 +53,34 @@ partial class Build : NukeBuild
     
     void Pack(BuildParameters buildParameters)
     {
-        var cmd = $"pack {buildParameters.ProjectName}.csproj --output ./../../packages/{buildParameters.PackageName} -p:IncludeSymbols=true -p:SymbolPackageFormat=snupkg";
-        ProcessTasks.StartProcess(
-                "dotnet",
-                cmd,
-                SourceDirectory/buildParameters.ProjectFolder)
-            .AssertZeroExitCode();
+        DotNetTasks.DotNetPack(s=> s
+            .SetProject(SourceDirectory / buildParameters.ProjectFilePath)
+            .SetConfiguration(Configuration)
+            .SetOutputDirectory(OutputDirectory / buildParameters.PackageName)
+            .EnableIncludeSymbols()
+            .EnableIncludeSource()
+            .SetSymbolPackageFormat(DotNetSymbolPackageFormat.snupkg)
+            .SetVersion(buildParameters.Version)
+            .SetProcessWorkingDirectory(SourceDirectory/ buildParameters.ProjectFolder)
+        );
     }
 
     void Publish(BuildParameters buildParameters)
     {
-        var command =$"push nuget linqworks/vvdklibraries {buildParameters.PackageName}\\{buildParameters.PackageName}.{buildParameters.Version}.nupkg"; 
-        ProcessTasks.StartProcess(
-                "cloudsmith",
-                command,
-                OutputDirectory)
-            .AssertZeroExitCode();
-        var publishSymbolsCommand = $"push nuget linqworks/vvdklibraries {buildParameters.PackageName}\\{buildParameters.PackageName}.{buildParameters.Version}.snupkg";
-        ProcessTasks.StartProcess(
-                "cloudsmith", 
-                publishSymbolsCommand,
-                OutputDirectory)
-            .AssertZeroExitCode();
+        var nupkgs = OutputDirectory / buildParameters.PackageName / buildParameters.PackageName+"." +buildParameters.Version +".nupkg";
+        var snupkgs = OutputDirectory / buildParameters.PackageName / buildParameters.PackageName+"."+buildParameters.Version +".snupkg";
+        Push(nupkgs);
+        Push(snupkgs);
+
+        void Push(string packageName)
+        {
+            DotNetTasks.DotNetNuGetPush(s => s
+                .SetTargetPath(packageName)
+                .SetSource(GitHubSource)
+                .SetApiKey(GitHubToken)
+                .EnableSkipDuplicate()
+            );
+        }
     }
 
 

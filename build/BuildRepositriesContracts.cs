@@ -20,7 +20,7 @@ partial class Build
         .DependsOn(SetBuildParameters_RepositriesContracts)
         .Executes(() =>
         {
-            IncreaseVersion(RepositryContractsBuildParameters);
+            BumpVersion(RepositryContractsBuildParameters);
         });
     
     Target Clean_RepositriesContracts => x => x

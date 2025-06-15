@@ -27,6 +27,7 @@
         "Clean_Repositries",
         "Clean_RepositriesContracts",
         "IncreaseVersion_RepositriesContracts",
+        "LoadSettings",
         "Pack_Repositries",
         "Pack_RepositriesContracts",
         "Publish_Repositries",
@@ -115,6 +116,12 @@
             "Debug",
             "Release"
           ]
+        },
+        "GitHubOwner": {
+          "type": "string"
+        },
+        "GitHubToken": {
+          "type": "string"
         }
       }
     },

@@ -16,8 +16,11 @@ obj/
 *.tmp
 *.temp
 
-packages/
+output/
 
 # Rider project files
 .idea/
 *.sln.iml
+
+# Secets and sensitive data
+/build/secrets.json
