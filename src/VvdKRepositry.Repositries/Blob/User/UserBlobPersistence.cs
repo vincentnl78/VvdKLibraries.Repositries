@@ -9,11 +9,12 @@ using VvdKRepositry.Repositries.Contracts.Notifications.Creation;
 
 namespace VvdKRepositry.Repositries.Blob.User;
 
-public class UserBlobPersistence(
-    IIdProvider idProvider,
+public class UserBlobPersistence<TStorageParameterProvider>(
+    TStorageParameterProvider idProvider,
     IAzureClientFactory<BlobServiceClient> factory,
     JsonSerializerOptions jsonSerializerOptions) 
-    : BaseBlobPersistence(factory.CreateClient(idProvider.ServiceClientIdentifier), jsonSerializerOptions), IUserBlobPersistence
+    : BaseBlobPersistence(factory.CreateClient(idProvider.ServiceClientIdentifier), jsonSerializerOptions), IUserBlobPersistence<TStorageParameterProvider> 
+    where TStorageParameterProvider : class, IBlobStorageParameterProvider
 {
     public async  Task Handle(CreateUserPersistenceSetupNotification notification, CancellationToken cancellationToken)
     {
@@ -41,77 +42,82 @@ public class UserBlobPersistence(
 
     public  Task DeleteFileAsync(string filename, string? directory = null)
     {
-        return base.DeleteFileAsync(idProvider.TableName,filename, directory);
+        return base.DeleteFileAsync(idProvider.BlobContainerName,filename, directory);
     }
 
     public  Task ClearDirectoryAsync(string? directory = null)
     {
-        return base.ClearDirectoryAsync(idProvider.TableName, directory);
+        return base.ClearDirectoryAsync(idProvider.BlobContainerName, directory);
+    }
+
+    public Task<List<string>> GetFilenamesAsync(string? directory = null)
+    {
+        return base.GetFilenamesAsync(idProvider.BlobContainerName, directory);
     }
 
     public  Task<bool> SaveStreamAsync(Stream openReadStream, string file, string? directory, string? leaseId = null,
         string contentType = "application/json")
     {
-        return base.SaveStreamAsync(idProvider.TableName, openReadStream, file, directory, leaseId, contentType);
+        return base.SaveStreamAsync(idProvider.BlobContainerName, openReadStream, file, directory, leaseId, contentType);
     }
 
     public  Task SaveTextAsync(string text, string filename, string? directory = null)
     {
-        return base.SaveTextAsync(idProvider.TableName, text, filename, directory);
+        return base.SaveTextAsync(idProvider.BlobContainerName, text, filename, directory);
     }
 
     public  Task SaveObjectAsync<T>(T o, string filename, string? directory = null)
     {
-        return base.SaveObjectAsync(idProvider.TableName, o, filename, directory);
+        return base.SaveObjectAsync(idProvider.BlobContainerName, o, filename, directory);
     }
 
     public  Task<string> SavePotentiallyRenameImportFileAsync(Stream stream, string filename, string directory)
     {
-        return base.SavePotentiallyRenameImportFileAsync(idProvider.TableName, stream, filename, directory);
+        return base.SavePotentiallyRenameImportFileAsync(idProvider.BlobContainerName, stream, filename, directory);
     }
 
-    public  Task<string> AcquireLease(bool infinite, string path, CancellationToken cancellationToken)
+    public Task<string> AcquireLeaseAsync(string path, TimeSpan timeSpan, CancellationToken cancellationToken)
     {
-        return base.AcquireLease(idProvider.TableName, infinite, path, cancellationToken);
+        return base.AcquireLeaseAsync(idProvider.BlobContainerName,path,timeSpan, cancellationToken);
     }
 
-    public  Task<bool> ReleaseLease(string path, string? leaseId)
+    public  Task<bool> ReleaseLeaseAsync(string path, string? leaseId)
     {
-        return base.ReleaseLease(idProvider.TableName, path, leaseId);
+        return base.ReleaseLeaseAsync(idProvider.BlobContainerName, path, leaseId);
     }
 
     public  Task<DateTimeOffset?> GetStartOfCurrentLeaseAsync(string path)
     {
-        return base.GetStartOfCurrentLeaseAsync(idProvider.TableName, path);
+        return base.GetStartOfCurrentLeaseAsync(idProvider.BlobContainerName, path);
     }
 
     public  Task<bool> ExistsAsync(string path)
     {
-        return base.ExistsAsync(idProvider.TableName, path);
+        return base.ExistsAsync(idProvider.BlobContainerName, path);
     }
 
     public  Task<bool> InitializeAsync()
     {
-        return base.InitializeAsync(idProvider.TableName);
+        return base.InitializeAsync(idProvider.BlobContainerName);
     }
 
     public  Task<bool> DeleteContainerAsync()
     {
-        return base.DeleteContainerAsync(idProvider.TableName);
+        return base.DeleteContainerAsync(idProvider.BlobContainerName);
     }
 
     public  Task<Stream?> GetReadStreamAsync(string path, string? directory = null)
     {
-        return base.GetReadStreamAsync(idProvider.TableName, path, directory);
+        return base.GetReadStreamAsync(idProvider.BlobContainerName, path, directory);
     }
 
     public  Task<T?> GetAsync<T>(string filename, string? directory = null)
     {
-        return base.GetAsync<T>(idProvider.TableName, filename, directory);
+        return base.GetAsync<T>(idProvider.BlobContainerName, filename, directory);
     }
 
     public  Task<string?> GetFileStringAsync(string filename, string directory)
     {
-        return base.GetFileStringAsync(idProvider.TableName, filename, directory);
+        return base.GetFileStringAsync(idProvider.BlobContainerName, filename, directory);
     }
 }

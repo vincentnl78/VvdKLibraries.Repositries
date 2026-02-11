@@ -1,16 +1,17 @@
 using System.Text.Json;
 using Serilog;
+using VvdKRepositry.Repositries.Contracts;
 using VvdKRepositry.Repositries.Contracts.Blob.Base;
 using VvdKRepositry.Repositries.Contracts.Blob.User;
 using VvdKRepositry.Repositries.Contracts.Notifications.Repositry;
 
 namespace VvdKRepositry.Repositries.Blob.User;
 
-public abstract class JsonRepositryBaseBacking<T>(
-    IUserBlobPersistence userBlobPersistence,
+public abstract class JsonRepositryBaseBacking<T,TIdProvider>(
+    IUserBlobPersistence<TIdProvider> userBlobPersistence,
     JsonSerializerOptions jsonSerializerOptions)
-    :UserBlobRepositry(userBlobPersistence), IBaseBacking,IRepositryWorkNotifications,ILockableByLease
-    where T : new()
+    :UserBlobRepositry<TIdProvider>(userBlobPersistence), IBaseBacking,IRepositryWorkNotifications,ILockableByLease
+    where T : new() where TIdProvider : class, IBlobStorageParameterProvider
 {
     private string? _leaseId;
     private JsonSerializerOptions JsonSerializerOptions { get; } = jsonSerializerOptions;
@@ -79,11 +80,13 @@ public abstract class JsonRepositryBaseBacking<T>(
         Dirty = false;
     }
 
-    public async Task<bool> AcquireLease(CancellationToken cancellationToken = default)
+    public async Task<bool> AcquireLeaseAsync(TimeSpan timespan, CancellationToken cancellationToken = default)
     {
-        _leaseId = await AcquireLease(true, PackageName, cancellationToken);
+        _leaseId = await AcquireLeaseAsync(PackageName,timespan, cancellationToken);
         return _leaseId != null;
     }
+
+    
 
     public async Task<bool> ReleaseLease(bool force)
     {
@@ -96,7 +99,7 @@ public abstract class JsonRepositryBaseBacking<T>(
         bool success;
         if (_leaseId != null)
         {
-            success = await ReleaseLease(PackageName, _leaseId);
+            success = await ReleaseLeaseAsync(PackageName, _leaseId);
             if (success)
             {
                 //Log.Verbose("Released lease {LeaseId} for {Filename}", _leaseId, PackageName);
@@ -111,7 +114,7 @@ public abstract class JsonRepositryBaseBacking<T>(
         else
         {
             Log.Verbose("Breaking lease for {Filename}", PackageName);
-            success = await ReleaseLease(PackageName, null);
+            success = await ReleaseLeaseAsync(PackageName, null);
         }
 
         return success;

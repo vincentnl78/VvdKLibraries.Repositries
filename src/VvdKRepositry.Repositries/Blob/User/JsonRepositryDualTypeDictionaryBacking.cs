@@ -1,18 +1,20 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using VvdKRepositry.Repositries.Contracts;
 using VvdKRepositry.Repositries.Contracts.Blob.User;
 
 namespace VvdKRepositry.Repositries.Blob.User;
 
-public abstract class JsonRepositryDualTypeDictionaryBacking<T,T1,T2>(
-    IUserBlobPersistence persistence,
+public abstract class JsonRepositryDualTypeDictionaryBacking<T,T1,T2,TIdProvider>(
+    IUserBlobPersistence<TIdProvider> persistence,
     JsonSerializerOptions jsonSerializerOptions)
-    : JsonRepositryBaseBacking<Dictionary<int,T>>(persistence, jsonSerializerOptions),
+    : JsonRepositryBaseBacking<Dictionary<int,T>,TIdProvider>(persistence, jsonSerializerOptions),
         IReadDualTypeDictionaryRepository<T,T1,T2>,
         IWriteDualTypeRepository<int,T1,T2>
     where T : EntityWithId<int>
     where T1:T
     where T2:T
+    where TIdProvider : class, IBlobStorageParameterProvider
 {
 
     private Dictionary<int,T1>? _contentType1;
@@ -34,7 +36,7 @@ public abstract class JsonRepositryDualTypeDictionaryBacking<T,T1,T2>(
         }
     }
       
-    public bool TryGet(int id,[NotNullWhen(true)] out T value)
+    public bool TryGetValue(int id,[NotNullWhen(true)] out T value)
     {
         if (_contentType1 != null && _contentType1.TryGetValue(id, out var t1))
         {

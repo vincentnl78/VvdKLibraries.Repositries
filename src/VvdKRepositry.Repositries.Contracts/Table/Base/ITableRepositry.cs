@@ -6,11 +6,12 @@ public interface ITableRepositry
 {
     #region Change
     Task DeleteAllRows();
-    Task DeleteAsync(string partition, string rowkey);
+    
     Task<bool> SubmitChangesAsync(List<TableEntity>? additions, List<TableEntity>? updates, List<TableEntity>? deletes);
     Task<bool> SubmitChangesAsync(List<ITableEntity>? additions, List<ITableEntity>? updates, List<ITableEntity>? deletes);
     Task<bool> Add(ITableEntity addition);
     Task<bool> Update(ITableEntity update);
+    Task DeleteAsync(string partition, string rowkey);
     #endregion
 
     #region Query
@@ -30,6 +31,9 @@ public interface ITableRepositry
 
     Task<List<TableEntity>> FetchPartitionAsync(string partition, int requestedItemCount = int.MaxValue);
     Task<List<T>> FetchPartitionAsync<T>(string partition, int requestedItemCount = int.MaxValue)
+        where T : class, ITableEntity;
+    
+    Task<List<T>> FetchPartitionAndRowkeyStartingWithAsync<T>(string partition,string startswith, int requestedItemCount = int.MaxValue)
         where T : class, ITableEntity;
 
     List<TableEntity> FetchPartition(string partition, int requestedItemCount, CancellationToken cancellationToken);
@@ -53,3 +57,4 @@ public interface ITableRepositry
 
     #endregion
 }
+

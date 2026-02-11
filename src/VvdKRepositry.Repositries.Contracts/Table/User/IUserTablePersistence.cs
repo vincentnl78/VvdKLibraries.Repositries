@@ -3,5 +3,5 @@ using VvdKRepositry.Repositries.Contracts.Table.Base;
 
 namespace VvdKRepositry.Repositries.Contracts.Table.User;
 
-public interface IUserTablePersistence : ITableRepositry, IUserPersistenceCreationNotifications;
-    
+public interface IUserTablePersistence<TIdProvider> : ITableRepositry, IUserPersistenceCreationNotifications 
+    where TIdProvider : class,ITableStorageParameterProvider;

@@ -1,7 +1,6 @@
 namespace VvdKRepositry.Repositries.Contracts.Blob.User;
 
 public interface IWriteRepository<in TKey,T>:IBaseBacking
-    where TKey : struct
     where T :IId<TKey>
 {
     T Add(T entity);

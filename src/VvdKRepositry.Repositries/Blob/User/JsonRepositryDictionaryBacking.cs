@@ -1,16 +1,19 @@
 using System.Text.Json;
+using VvdKRepositry.Repositries.Contracts;
 using VvdKRepositry.Repositries.Contracts.Blob.User;
 
 namespace VvdKRepositry.Repositries.Blob.User;
 
-public abstract class JsonRepositryDictionaryBacking<TKey,T>(
-    IUserBlobPersistence persistence,
+public abstract class JsonRepositryDictionaryBacking<TKey,T,TIdProvider>(
+    IUserBlobPersistence<TIdProvider> persistence,
     JsonSerializerOptions jsonSerializerOptions)
-    : JsonRepositryBaseBacking<Dictionary<TKey,T>>(persistence, jsonSerializerOptions),
+    : JsonRepositryBaseBacking<Dictionary<TKey,T>,TIdProvider>(persistence, jsonSerializerOptions),
         IReadDictionaryRepository<TKey,T>,
         IWriteRepository<TKey,T>
-    where T: IId<TKey>
-    where TKey : struct
+    where T: IId<TKey> 
+    where TKey : notnull
+    where TIdProvider : class, IBlobStorageParameterProvider
+
 {
     private Dictionary<TKey,T>? _content;
     protected override Dictionary<TKey,T> Content
@@ -26,7 +29,7 @@ public abstract class JsonRepositryDictionaryBacking<TKey,T>(
     public IReadOnlyDictionary<TKey, T> Dictionary => Content;
 
     public IEnumerable<T> All => Content.Values;
-    public bool TryGet(TKey id, out T value)
+    public bool TryGetValue(TKey id, out T value)
     {
         if (Content.TryGetValue(id, out var entity))
         {

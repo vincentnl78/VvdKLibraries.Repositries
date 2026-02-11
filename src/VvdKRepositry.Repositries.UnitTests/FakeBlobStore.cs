@@ -33,6 +33,11 @@ public class FakeBlobStore : IGeneralBlobPersistence
         throw new NotImplementedException();
     }
 
+    public Task<List<string>> GetFilenamesAsync(string container, string? directory = null)
+    {
+        throw new NotImplementedException();
+    }
+
     public Task<bool> SaveStreamAsync(string container, Stream openReadStream, string file, string? directory, string? leaseId = null,
         string contentType = "application/json")
     {
@@ -54,12 +59,12 @@ public class FakeBlobStore : IGeneralBlobPersistence
         throw new NotImplementedException();
     }
 
-    public Task<string> AcquireLease(string container, bool infinite, string path, CancellationToken cancellationToken)
+    public Task<string> AcquireLeaseAsync(string container, string path, TimeSpan timespan, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
-
-    public Task<bool> ReleaseLease(string container, string path, string? leaseId)
+    
+    public Task<bool> ReleaseLeaseAsync(string container, string path, string? leaseId)
     {
         throw new NotImplementedException();
     }

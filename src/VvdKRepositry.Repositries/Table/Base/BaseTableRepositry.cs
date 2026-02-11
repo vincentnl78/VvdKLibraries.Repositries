@@ -32,6 +32,11 @@ public abstract class BaseTableRepositry(IBaseTablePersistence tablePersistence)
         return tablePersistence.Add(TableName, addition);
     }
 
+    public Task<bool> Add(string tablename, ITableEntity addition)
+    {
+        return tablePersistence.Add(tablename, addition);
+    }
+
     public  Task<bool> Update(ITableEntity update)
     {
         return tablePersistence.Update(TableName, update);
@@ -77,6 +82,12 @@ public abstract class BaseTableRepositry(IBaseTablePersistence tablePersistence)
     public  Task<List<T>> FetchPartitionAsync<T>(string partition, int requestedItemCount = 2147483647) where T : class, ITableEntity
     {
         return tablePersistence.FetchPartitionAsync<T>(TableName, partition, requestedItemCount);
+    }
+
+    public Task<List<T>> FetchPartitionAndRowkeyStartingWithAsync<T>(string partition, string startswith,
+        int requestedItemCount = Int32.MaxValue) where T : class, ITableEntity
+    {
+        return tablePersistence.FetchPartitionAndRowkeyStartingWithAsync<T>(TableName, partition, startswith, requestedItemCount);
     }
 
     public List<TableEntity> FetchPartition(string partition, int requestedItemCount, CancellationToken cancellationToken)

@@ -1,9 +1,10 @@
-﻿using VvdKRepositry.Repositries.Contracts.Blob.User;
+﻿using VvdKRepositry.Repositries.Contracts;
+using VvdKRepositry.Repositries.Contracts.Blob.User;
 
 namespace VvdKRepositry.Repositries.Blob.User;
 
-public abstract class UserBlobRepositry(IUserBlobPersistence userBlobPersistence)
-    :  IUserBlobRepositry
+public abstract class UserBlobRepositry<TIdProvider>(IUserBlobPersistence<TIdProvider> userBlobPersistence)
+    :  IUserBlobRepositry where TIdProvider : class, IBlobStorageParameterProvider
 {
     public  Task DeleteFileAsync(string filename, string? directory = null)
     {
@@ -13,6 +14,11 @@ public abstract class UserBlobRepositry(IUserBlobPersistence userBlobPersistence
     public  Task ClearDirectoryAsync(string? directory = null)
     {
         return userBlobPersistence.ClearDirectoryAsync(directory);
+    }
+
+    public Task<List<string>> GetFilenamesAsync(string? directory = null)
+    {
+        return userBlobPersistence.GetFilenamesAsync(directory); 
     }
 
     public  Task<bool> SaveStreamAsync(Stream openReadStream, string file, string? directory, string? leaseId = null,
@@ -36,14 +42,14 @@ public abstract class UserBlobRepositry(IUserBlobPersistence userBlobPersistence
         return userBlobPersistence.SavePotentiallyRenameImportFileAsync(stream, filename, directory);
     }
 
-    public  Task<string> AcquireLease(bool infinite, string path, CancellationToken cancellationToken)
+    public Task<string> AcquireLeaseAsync(string path, TimeSpan timeSpan, CancellationToken cancellationToken)
     {
-        return userBlobPersistence.AcquireLease(infinite, path,  cancellationToken);
+        return userBlobPersistence.AcquireLeaseAsync(path,timeSpan,  cancellationToken);
     }
 
-    public  Task<bool> ReleaseLease(string path, string? leaseId)
+    public  Task<bool> ReleaseLeaseAsync(string path, string? leaseId)
     {
-        return userBlobPersistence.ReleaseLease(path, leaseId);
+        return userBlobPersistence.ReleaseLeaseAsync(path, leaseId);
     }
 
     public  Task<DateTimeOffset?> GetStartOfCurrentLeaseAsync(string path)
