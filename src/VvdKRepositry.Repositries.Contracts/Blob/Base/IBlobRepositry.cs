@@ -4,6 +4,7 @@ public interface IBlobRepositry
 {
     Task DeleteFileAsync(string filename, string? directory = null);
     Task ClearDirectoryAsync(string? directory = null);
+    Task<List<string>> GetFilenamesAsync(string? directory = null);
 
     Task<bool> SaveStreamAsync(Stream openReadStream, string file, string? directory, string? leaseId = null, string contentType = "application/json");
 
@@ -12,8 +13,8 @@ public interface IBlobRepositry
     Task<string> SavePotentiallyRenameImportFileAsync(Stream stream, string filename, string directory);
 
 
-    Task<string> AcquireLease(bool infinite, string path, CancellationToken cancellationToken);
-    Task<bool> ReleaseLease(string path,string? leaseId);
+    Task<string> AcquireLeaseAsync(string path,TimeSpan timeSpan, CancellationToken cancellationToken);
+    Task<bool> ReleaseLeaseAsync(string path,string? leaseId);
     Task<DateTimeOffset?> GetStartOfCurrentLeaseAsync(string path);
 
     Task<bool> ExistsAsync(string path);

@@ -8,10 +8,11 @@ using VvdKRepositry.Repositries.Table.Base;
 
 namespace VvdKRepositry.Repositries.Table.User;
 
-public class UserTablePersistence(
-    IIdProvider idProvider, 
+public class UserTablePersistence<TTableStorageParameterProvider>(
+    TTableStorageParameterProvider idProvider, 
     IAzureClientFactory<TableServiceClient> factory)
-    : BaseTablePersistence(factory.CreateClient(idProvider.ServiceClientIdentifier)), IUserTablePersistence
+    : BaseTablePersistence(factory.CreateClient(idProvider.ServiceClientIdentifier)), IUserTablePersistence<TTableStorageParameterProvider>
+        where TTableStorageParameterProvider:class,ITableStorageParameterProvider
 {
     public async Task Handle(CreateUserPersistenceSetupNotification notification, CancellationToken cancellationToken)
     {
@@ -146,8 +147,17 @@ public class UserTablePersistence(
         return base.DeleteTableAsync(idProvider.TableName);
     }
 
-    public  Task InitializeAsync()
+    public Task InitializeAsync()
     {
         return base.InitializeAsync(idProvider.TableName);
     }
+
+    public Task<List<T>> FetchPartitionAndRowkeyStartingWithAsync<T>(string partition, string startswith, int requestedItemCount = int.MaxValue)
+        where T : class, ITableEntity
+    {
+        return base.FetchPartitionAndRowkeyStartingWithAsync<T>(idProvider.TableName, partition, startswith, requestedItemCount);
+    }
+
+
+
 }

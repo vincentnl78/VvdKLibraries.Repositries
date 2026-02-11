@@ -9,7 +9,7 @@ namespace VvdKRepositry.Repositries.Table.Base;
 public abstract class BaseTablePersistence(TableServiceClient client) : IBaseTablePersistence
 {
     private const int BatchSize = 100;
-    //private TableClient Table => client.GetTableClient(TableName);
+    
     private TableClient GetTableClient(string tableName)
     {
         return client.GetTableClient(tableName);
@@ -306,6 +306,33 @@ public abstract class BaseTablePersistence(TableServiceClient client) : IBaseTab
         return entities;
     }
 
+    public async Task<List<T>> FetchPartitionAndRowkeyStartingWithAsync<T>(
+        string tableName,
+        string partition,
+        string prefix,
+        int requestedItemCount = int.MaxValue)
+        where T : class, ITableEntity
+    {
+        var table = GetTableClient(tableName);
+
+        var result = new List<T>(Math.Min(requestedItemCount, 1024));
+
+        var start = prefix;
+        var end   = prefix + '\uFFFF';
+
+        var filter = TableClient.CreateQueryFilter($"PartitionKey eq {partition} and RowKey ge {start} and RowKey lt {end}");
+
+        await foreach (var entity in table.QueryAsync<T>(filter))
+        {
+            result.Add(entity);
+            if (result.Count == requestedItemCount)
+                break;
+        }
+
+        return result;
+    }
+
+
     public Task<List<TableEntity>> FetchByRowKey(string tableName,string value, int requestedItemCount, CancellationToken cancellationToken)
     {
         return FetchByRowKey<TableEntity>(tableName,value,requestedItemCount, cancellationToken);
@@ -368,4 +395,9 @@ public abstract class BaseTablePersistence(TableServiceClient client) : IBaseTab
     }
 
     #endregion
+
+    /*protected Task<List<T>> FetchPartitionAndRowkeyStartingWithAsync<T>(string partition, string startswith, int requestedItemCount) where T : class, ITableEntity
+    {
+        throw new NotImplementedException();
+    }*/
 }

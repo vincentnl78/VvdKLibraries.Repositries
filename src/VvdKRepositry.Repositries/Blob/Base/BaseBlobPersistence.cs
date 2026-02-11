@@ -9,30 +9,52 @@ using VvdKRepositry.Repositries.Contracts.Blob.Base;
 
 namespace VvdKRepositry.Repositries.Blob.Base;
 
-public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializerOptions jsonSerializerOptions) : IBaseBlobPersistence
+public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializerOptions jsonSerializerOptions)
+    : IBaseBlobPersistence,IAsyncDisposable 
 {
     public virtual async Task DeleteFileAsync(string containername, string filename, string? directory)
     {
         await client.GetBlobContainerClient(containername).GetBlobClient(MakePath(filename, directory)).DeleteAsync();
     }
 
-    public async Task ClearDirectoryAsync(string containername,string? directory = null)
+    public async Task ClearDirectoryAsync(string containername, string? directory = null)
     {
         var container = client.GetBlobContainerClient(containername);
-        await foreach (var blobItem in container.GetBlobsAsync(prefix: directory))
-        {
+        await foreach (var blobItem in container.GetBlobsAsync(
+                           BlobTraits.None,
+                           BlobStates.None,
+                           directory,
+                           CancellationToken.None))
             await container.GetBlobClient(blobItem.Name).DeleteAsync();
-        }
-    }
-    public virtual async Task<Stream?> GetReadStreamAsync(string containername,string filename, string? directory = null)
-    {
-        return await GetReadStreamAsync(GetBlobClient(containername,MakePath(filename, directory)));
     }
 
-    public virtual async Task<bool> SaveStreamAsync(string containername,Stream openReadStream, string file, string? directory,
+    public async Task<List<string>> GetFilenamesAsync(string containername, string? directory = null)
+    {
+        List<string> filenames = [];
+        var container = client.GetBlobContainerClient(containername);
+        await foreach (var blobItem in container.GetBlobsAsync(
+                           BlobTraits.None,
+                            BlobStates.None,
+                           directory,
+                           CancellationToken.None
+                           ))
+        {
+            filenames.Add(blobItem.Name);
+        }
+        return filenames;
+    }
+
+    public virtual async Task<Stream?> GetReadStreamAsync(string containername, string filename,
+        string? directory = null)
+    {
+        return await GetReadStreamAsync(GetBlobClient(containername, MakePath(filename, directory)));
+    }
+
+    public virtual async Task<bool> SaveStreamAsync(string containername, Stream openReadStream, string file,
+        string? directory,
         string? leaseId = null, string? contentType = null)
     {
-        var blob = GetBlobClient(containername,MakePath(file, directory));
+        var blob = GetBlobClient(containername, MakePath(file, directory));
         var blobUploadOptions = new BlobUploadOptions
         {
             HttpHeaders = new BlobHttpHeaders
@@ -49,145 +71,30 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
         };
         return await SaveAsync(blob, openReadStream, blobUploadOptions);
     }
-    
-    #region Leases
 
-    public async Task<string> AcquireLease(string containername,bool infinite, string path,
-        CancellationToken cancellationToken)
+
+    public virtual async Task<bool> ExistsAsync(string containername, string path)
     {
-        var blob = GetBlobClient(containername,path);
-        var leaseBlobClient = blob.GetBlobLeaseClient();
-        var timespan = infinite
-            ? BlobLeaseClient.InfiniteLeaseDuration
-            : TimeSpan.FromSeconds(60);
-        try
-        {
-            Response<BlobLease> blobLeaseResponse =
-                await leaseBlobClient.AcquireAsync(timespan, null, cancellationToken);
-            if (blobLeaseResponse != null)
-            {
-                Log.ForContext<BaseBlobPersistence>().Verbose("Acquired lease {Path}", path);
-                return blobLeaseResponse.Value.LeaseId;
-            }
-
-            Log.ForContext<BaseBlobPersistence>().Error("Could not get lease {Path}", path);
-        }
-        catch (RequestFailedException ex)
-        {
-            Log.ForContext<BaseBlobPersistence>().Error(ex, "Could not get lease {Path}", path);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Could not get lease {Path}", path);
-            throw;
-        }
-
-        throw new Exception($"Could not get lease {path} - unknown error");
-    }
-
-    public async Task<bool> ReleaseLease(string containername,string path, string? leaseId)
-    {
-        var blob = GetBlobClient(containername,path);
-        var leaseBlobClient = blob.GetBlobLeaseClient(leaseId);
-        try
-        {
-            if (leaseId == null)
-            {
-                var blobBreakLeaseResponse = await leaseBlobClient.BreakAsync();
-                Log.ForContext<BaseBlobPersistence>().Verbose("Breaking lease for {Path}", path);
-                return blobBreakLeaseResponse != null;
-            }
-
-            var blobLeaseResponse = await leaseBlobClient.ReleaseAsync();
-            Log.ForContext<BaseBlobPersistence>().Verbose("Released lease {Lease} for {Path}", leaseId, path);
-            return blobLeaseResponse != null;
-        }
-        catch (Exception ex)
-        {
-            Log.ForContext<BaseBlobPersistence>().Error(ex, "releasing lease failed, leaseId:{Lease}, {ExMessage}", leaseId,
-                ex.Message);
-        }
-
-        return false;
-    }
-
-    public async Task<DateTimeOffset?> GetStartOfCurrentLeaseAsync(string containername,string path)
-    {
-        var properties = await GetBlobPropertiesAsync(containername,path);
-        if (properties is { LeaseState: LeaseState.Leased, LeaseStatus: LeaseStatus.Locked })
-        {
-            return properties.LastModified;
-        }
-
-        return null;
-    }
-
-    #endregion
-
-
-    public virtual async Task<bool> ExistsAsync(string containername,string path)
-    {
-        var blob = GetBlobClient(containername,path);
+        var blob = GetBlobClient(containername, path);
         return await blob.ExistsAsync();
     }
 
-    #region Lifecycle
-    public virtual async Task<bool> InitializeAsync(string containername)
+    public async Task<T?> GetAsync<T>(string containername, string filename, string? directory = null)
     {
-        var containerClient = client.GetBlobContainerClient(containername);
-        try
-        {
-            var result = await containerClient.CreateIfNotExistsAsync();
-            int statusCode = result.GetRawResponse().Status;
-            
-            if(statusCode ==409)
-            {
-                Log.Information("Creating container {ContainerName}, already exists", containername);
-                return false;
-            }
-            
-            if (statusCode is 201 or 204)
-            {
-                Log.Information("Blob container created: {ContainerName}", containername);
-            }
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Creating container");
-            await Task.Delay(5000);
-            await containerClient.CreateIfNotExistsAsync();
-            return false;
-        }
-    }
-
-    public virtual async Task<bool> DeleteContainerAsync(string containername)
-    {
-        var container = client.GetBlobContainerClient(containername);
-        await container.DeleteAsync();
-        Log.Information("Blob container deleted: {ContainerName}", containername);
-        return true;
-    }
-    
-    #endregion
-
-    public async Task<T?> GetAsync<T>(string containername,string filename, string? directory = null)
-    {
-        var stream = await GetReadStreamAsync( containername, MakePath(filename, directory));
+        var stream = await GetReadStreamAsync(containername, MakePath(filename, directory));
         if (stream == null) return default;
 
         return JsonSerializer.Deserialize<T>(stream, jsonSerializerOptions);
     }
 
-    public async Task SaveTextAsync(string containername,string text, string filename, string? directory)
+    public async Task SaveTextAsync(string containername, string text, string filename, string? directory)
     {
         var byteArray = Encoding.ASCII.GetBytes(text);
         using MemoryStream ms = new(byteArray);
-        await SaveStreamAsync(containername,ms, filename, directory);
+        await SaveStreamAsync(containername, ms, filename, directory);
     }
 
-    public async Task<string?> GetFileStringAsync(string containername,string filename, string directory)
+    public async Task<string?> GetFileStringAsync(string containername, string filename, string directory)
     {
         var stream = await GetReadStreamAsync(filename, directory);
         if (stream != null)
@@ -200,27 +107,28 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
         return null;
     }
 
-    public async Task SaveObjectAsync<T>(string containername,T o, string filename, string? directory = null)
+    public async Task SaveObjectAsync<T>(string containername, T o, string filename, string? directory = null)
     {
         var stream = new MemoryStream();
         await JsonSerializer.SerializeAsync(stream, o);
-        await SaveStreamAsync(containername,stream, filename, directory);
+        await SaveStreamAsync(containername, stream, filename, directory);
     }
 
-    public async Task<string> SavePotentiallyRenameImportFileAsync(string containername,Stream stream, string filename, string directory)
+    public async Task<string> SavePotentiallyRenameImportFileAsync(string containername, Stream stream, string filename,
+        string directory)
     {
         var count = 1;
 
         var filenameToBeUsed = filename;
         while (true)
         {
-            if (await ExistsAsync(containername,MakePath(filenameToBeUsed, directory)))
+            if (await ExistsAsync(containername, MakePath(filenameToBeUsed, directory)))
             {
                 filenameToBeUsed = CreateFollowUpFilename(filename, count++);
                 continue;
             }
 
-            await SaveStreamAsync(containername,stream, filenameToBeUsed, directory);
+            await SaveStreamAsync(containername, stream, filenameToBeUsed, directory);
             break;
         }
 
@@ -229,7 +137,7 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
 
     private async Task<BlobProperties> GetBlobPropertiesAsync(string containername, string path)
     {
-        var blob = GetBlobClient(containername,path);
+        var blob = GetBlobClient(containername, path);
         return (await blob.GetPropertiesAsync()).Value;
     }
 
@@ -240,7 +148,7 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
         return $"{filename}({count}){ext}";
     }
 
-    private BlobClient GetBlobClient(string containername,string path)
+    private BlobClient GetBlobClient(string containername, string path)
     {
         return client.GetBlobContainerClient(containername).GetBlobClient(path);
     }
@@ -288,4 +196,152 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
             ? filename
             : directory + "/" + filename;
     }
+
+    #region Leases
+
+    private CancellationTokenSource? _renewalCts;
+    private Task? _renewalTask;
+   
+    public async Task<string> AcquireLeaseAsync(string container,string path,TimeSpan timespan, CancellationToken cancellationToken)
+    {
+        var blobClient = GetBlobClient(container, path);
+        var leaseClient = blobClient.GetBlobLeaseClient();
+        var leaseResponse = await leaseClient.AcquireAsync(
+            timespan<=TimeSpan.FromSeconds(60)
+            ? timespan: TimeSpan.FromSeconds(60), // Azure Storage has a max lease time of 60 seconds
+            cancellationToken: cancellationToken);
+        if (timespan > TimeSpan.FromSeconds(60))
+        {
+            Log.Information("Long lease started");
+            _renewalCts = new CancellationTokenSource();
+            var linkedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _renewalCts.Token).Token;
+            _renewalTask = RenewLeasePeriodicallyAsync(blobClient, leaseResponse.Value.LeaseId, linkedToken);    
+        }
+        else
+        {
+            Log.Information("Short lease started");
+        }
+        return leaseResponse.Value.LeaseId;
+    }
+
+    public async Task<bool> ReleaseLeaseAsync(string container,string path,string? leaseId)
+    {
+        var blobClient = GetBlobClient(container, path);
+
+        // ReSharper disable once MethodHasAsyncOverload
+        _renewalCts?.Cancel();
+        
+        if (_renewalTask != null)
+        {
+            try { await _renewalTask; } catch (TaskCanceledException) { }
+        }
+
+        if (leaseId != null)
+        {
+            var leaseClient = blobClient.GetBlobLeaseClient(leaseId);
+            await leaseClient.ReleaseAsync();    
+        }
+        else
+        {
+            var leaseClient = blobClient.GetBlobLeaseClient();
+            await leaseClient.BreakAsync();
+            Log.Information("Breaking lease for {Path}", path);
+        }
+        return true;
+    }
+
+    private async Task RenewLeasePeriodicallyAsync(BlobClient blobClient, string leaseId, CancellationToken token)
+    {
+        var leaseClient = blobClient.GetBlobLeaseClient(leaseId);
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(50), token);
+                try
+                {
+                    await leaseClient.RenewAsync(cancellationToken: token);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Lease renewal failed: {ex.Message}");
+                }
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_renewalCts is not null)
+        {
+            // ReSharper disable once MethodHasAsyncOverload
+            _renewalCts?.Cancel();
+            if (_renewalTask != null)
+            {
+                try { await _renewalTask; } catch (TaskCanceledException) { }
+            }
+        }
+        _renewalCts?.Dispose();
+        _renewalCts = null;
+    }
+    
+   
+
+    
+
+    public async Task<DateTimeOffset?> GetStartOfCurrentLeaseAsync(string containername, string path)
+    {
+        var properties = await GetBlobPropertiesAsync(containername, path);
+        if (properties is { LeaseState: LeaseState.Leased, LeaseStatus: LeaseStatus.Locked })
+            return properties.LastModified;
+
+        return null;
+    }
+
+    #endregion
+
+    #region Lifecycle
+
+    public virtual async Task<bool> InitializeAsync(string containername)
+    {
+        var containerClient = client.GetBlobContainerClient(containername);
+        try
+        {
+            var result = await containerClient.CreateIfNotExistsAsync();
+            if (result == null)//null check must stay https://github.com/Azure/azure-sdk-for-net/issues/9758
+            {
+                Log.Information("Creating container {ContainerName}, already exists - null return", containername);
+                return false;
+            } 
+                
+            var statusCode = result.GetRawResponse().Status;
+            switch (statusCode)
+            {
+                case 409:
+                    Log.Information("Creating container {ContainerName}, already exists - 409 return", containername);
+                    break;
+                case 201 or 204:
+                    Log.Information("Blob container created: {ContainerName}", containername);
+                    break;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Creating container");
+            throw;
+        }
+    }
+
+    public virtual async Task<bool> DeleteContainerAsync(string containername)
+    {
+        var container = client.GetBlobContainerClient(containername);
+        await container.DeleteAsync();
+        Log.Information("Blob container deleted: {ContainerName}", containername);
+        return true;
+    }
+
+    #endregion
 }

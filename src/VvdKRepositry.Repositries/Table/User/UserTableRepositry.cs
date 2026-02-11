@@ -1,11 +1,13 @@
 ﻿using Azure.Data.Tables;
+using VvdKRepositry.Repositries.Contracts;
 using VvdKRepositry.Repositries.Contracts.Table.User;
 
 namespace VvdKRepositry.Repositries.Table.User;
 
-public abstract class UserTableRepositry(
-    IUserTablePersistence userTablePersistence)
-    : IUserTableRepositry
+public abstract class UserTableRepositry<TIdProvider>(
+    IUserTablePersistence<TIdProvider> userTablePersistence)
+    : IUserTableRepositry 
+    where TIdProvider:class, ITableStorageParameterProvider
 {
     public  Task DeleteAllRows()
     {
@@ -41,7 +43,7 @@ public abstract class UserTableRepositry(
     {
         return userTablePersistence.FetchByFilterAsync(query, requestedItemCount, cancellationToken);
     }
-
+   
     public  Task<List<T>> FetchByFilterAsync<T>(string query, int requestedItemCount, CancellationToken cancellationToken) where T : class, ITableEntity
     {
         return userTablePersistence.FetchByFilterAsync<T>(query, requestedItemCount, cancellationToken);
@@ -77,6 +79,12 @@ public abstract class UserTableRepositry(
     public  Task<List<T>> FetchPartitionAsync<T>(string partition, int requestedItemCount = 2147483647) where T : class, ITableEntity
     {
         return userTablePersistence.FetchPartitionAsync<T>(partition, requestedItemCount);
+    }
+
+    public Task<List<T>> FetchPartitionAndRowkeyStartingWithAsync<T>(string partition, string startswith,
+        int requestedItemCount = Int32.MaxValue) where T : class, ITableEntity
+    {
+        return userTablePersistence.FetchPartitionAndRowkeyStartingWithAsync<T>(partition, startswith, requestedItemCount);
     }
 
     public List<TableEntity> FetchPartition(string partition, int requestedItemCount, CancellationToken cancellationToken)

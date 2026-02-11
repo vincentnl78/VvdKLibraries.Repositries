@@ -39,6 +39,9 @@ public interface IBaseTablePersistence
     Task<List<TableEntity>> FetchByPartitionAndPropertyAsync(string tableName,string partition, string property, string value, int requestedItemCount, CancellationToken cancellationToken);
     Task<List<T>> FetchByPartitionAndPropertyAsync<T>(string tableName, string partition, string property, string value, int requestedItemCount, CancellationToken cancellationToken) 
         where T : class, ITableEntity;
+    
+    Task<List<T>> FetchPartitionAndRowkeyStartingWithAsync<T>(string tableName,string partition,string prefix, int requestedItemCount = int.MaxValue)
+        where T : class, ITableEntity;
 
     Task<List<TableEntity>> FetchByRowKey(string tableName,string value, int requestedItemCount, CancellationToken cancellationToken);
     Task<List<T>> FetchByRowKey<T>(string tableName,string value, int requestedItemCount, CancellationToken cancellationToken) 

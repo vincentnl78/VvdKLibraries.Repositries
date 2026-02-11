@@ -15,6 +15,10 @@ public abstract class BaseBlobRepositry(IBaseBlobPersistence persistence):IBlobR
     {
         return persistence.ClearDirectoryAsync(ContainerName, directory);
     }
+    public Task<List<string>> GetFilenamesAsync(string? directory = null)
+    {
+        return persistence.GetFilenamesAsync(ContainerName, directory);
+    }
 
     public  Task<bool> SaveStreamAsync(Stream openReadStream, string file, string? directory, string? leaseId = null,
         string contentType = "application/json")
@@ -37,14 +41,15 @@ public abstract class BaseBlobRepositry(IBaseBlobPersistence persistence):IBlobR
         return persistence.SavePotentiallyRenameImportFileAsync(ContainerName,stream,filename,directory);
     }
 
-    public  Task<string> AcquireLease(bool infinite, string path, CancellationToken cancellationToken)
+    public Task<string> AcquireLeaseAsync(string path, TimeSpan timeSpan, CancellationToken cancellationToken)
     {
-        return persistence.AcquireLease(ContainerName,infinite,path,cancellationToken);
+        return persistence.AcquireLeaseAsync(ContainerName,path,timeSpan,cancellationToken);
+        
     }
 
-    public  Task<bool> ReleaseLease(string path, string? leaseId)
+    public  Task<bool> ReleaseLeaseAsync(string path, string? leaseId)
     {
-        return persistence.ReleaseLease(ContainerName,path,leaseId);
+        return persistence.ReleaseLeaseAsync(ContainerName,path,leaseId);
     }
 
     public  Task<DateTimeOffset?> GetStartOfCurrentLeaseAsync(string path)

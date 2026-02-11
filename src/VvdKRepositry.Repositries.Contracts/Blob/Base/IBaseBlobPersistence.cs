@@ -4,6 +4,7 @@ public interface IBaseBlobPersistence
 {
     Task DeleteFileAsync(string container, string filename, string? directory = null);
     Task ClearDirectoryAsync(string container,string? directory = null);
+    Task<List<string>> GetFilenamesAsync(string container,string? directory = null);
 
     Task<bool> SaveStreamAsync(string container,Stream openReadStream, string file, string? directory, string? leaseId = null, string contentType = "application/json");
 
@@ -12,8 +13,8 @@ public interface IBaseBlobPersistence
     Task<string> SavePotentiallyRenameImportFileAsync(string container,Stream stream, string filename, string directory);
 
 
-    Task<string> AcquireLease(string container,bool infinite, string path, CancellationToken cancellationToken);
-    Task<bool> ReleaseLease(string container,string path,string? leaseId);
+    Task<string> AcquireLeaseAsync(string container,string path,TimeSpan timespan, CancellationToken cancellationToken);
+    Task<bool> ReleaseLeaseAsync(string container,string path,string? leaseId);
     Task<DateTimeOffset?> GetStartOfCurrentLeaseAsync(string container,string path);
 
     Task<bool> ExistsAsync(string container,string path);

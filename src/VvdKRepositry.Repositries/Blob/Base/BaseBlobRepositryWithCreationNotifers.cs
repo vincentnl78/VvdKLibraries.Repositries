@@ -19,6 +19,7 @@ public abstract class BaseBlobRepositryWithCreationNotifers(IBaseBlobPersistence
         catch (Exception ex)
         {
             Log.Error(ex, "Error creating {ContainerName}", ContainerName);
+            throw;
         }
         
     }
@@ -32,6 +33,7 @@ public abstract class BaseBlobRepositryWithCreationNotifers(IBaseBlobPersistence
         catch (Exception ex)
         {
             Log.Error(ex, "Error deleting {ContainerName}", ContainerName);
+            throw;
         }
     }
 }

@@ -1,13 +1,14 @@
 using System.Text.Json;
+using VvdKRepositry.Repositries.Contracts;
 using VvdKRepositry.Repositries.Contracts.Blob.User;
 
 namespace VvdKRepositry.Repositries.Blob.User;
 
-public abstract class JsonRepositryIntDictionaryBacking<T>(
-    IUserBlobPersistence persistence,
+public abstract class JsonRepositryIntDictionaryBacking<T,TIdProvider>(
+    IUserBlobPersistence<TIdProvider> persistence,
     JsonSerializerOptions jsonSerializerOptions)
-    : JsonRepositryDictionaryBacking<int,T>(persistence, jsonSerializerOptions)
-    where T : EntityWithId<int>
+    : JsonRepositryDictionaryBacking<int,T,TIdProvider>(persistence, jsonSerializerOptions)
+    where T : EntityWithId<int> where TIdProvider : class, IBlobStorageParameterProvider
 {
     public override T Add(T entity)
     {
