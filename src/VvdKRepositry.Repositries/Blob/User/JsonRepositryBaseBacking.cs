@@ -34,7 +34,7 @@ public abstract class JsonRepositryBaseBacking<T,TIdProvider>(
                 var stream = await GetReadStreamAsync(PackageName);
                 if (stream != null)
                 {
-                    stream.Position = 0;
+                    //stream.Position = 0;
                     loaded = await JsonSerializer.DeserializeAsync<T>(stream, JsonSerializerOptions);
                 }
                 //}

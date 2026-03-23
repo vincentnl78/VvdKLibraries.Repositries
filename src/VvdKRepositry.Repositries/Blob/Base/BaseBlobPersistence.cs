@@ -155,15 +155,9 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
 
     private async Task<Stream?> GetReadStreamAsync(BlobClient blobClient)
     {
-        Stream stream = new MemoryStream();
-        if (await blobClient.ExistsAsync())
-        {
-            await blobClient.DownloadToAsync(stream);
-            stream.Position = 0;
-            return stream;
-        }
-
-        return null;
+        if (!await blobClient.ExistsAsync())
+            return null;
+        return await blobClient.OpenReadAsync();
     }
 
     private async Task<bool> SaveAsync(BlobClient blobClient, Stream openReadStream,
