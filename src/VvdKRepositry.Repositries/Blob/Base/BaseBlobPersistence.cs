@@ -96,7 +96,7 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
 
     public async Task<string?> GetFileStringAsync(string containername, string filename, string directory)
     {
-        var stream = await GetReadStreamAsync(filename, directory);
+        var stream = await GetReadStreamAsync(containername, filename, directory);
         if (stream != null)
         {
             StreamReader reader = new(stream);

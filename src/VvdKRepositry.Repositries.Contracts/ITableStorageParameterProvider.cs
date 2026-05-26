@@ -13,16 +13,16 @@ public class UserIdProvider:IUserIdProvider
 
 public interface ITableStorageParameterProvider
 {
-    public string Id { get; }
-    public string TableUri { get; }
+    //public string Id { get; }
+    //public string TableUri { get; }
     public string ServiceClientIdentifier { get; }
     public string TableName { get; }
 }
 
 public interface IBlobStorageParameterProvider
 {
-    public string Id { get; }
-    public string BlobUri { get; }
+    //public string Id { get; }
+    //public string BlobUri { get; }
     public string ServiceClientIdentifier { get; }
     public string BlobContainerName { get; }
 }

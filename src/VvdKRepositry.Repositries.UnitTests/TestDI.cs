@@ -4,7 +4,6 @@ using Azure.Identity;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using VvdKRepositry.Repositries.Contracts;
-using VvdKRepositry.Repositries.Contracts.Notifications;
 using VvdKRepositry.Repositries.Contracts.Notifications.Creation;
 using VvdKRepositry.Repositries.Contracts.Notifications.Repositry;
 using VvdKRepositry.Repositries.Contracts.Table.General;

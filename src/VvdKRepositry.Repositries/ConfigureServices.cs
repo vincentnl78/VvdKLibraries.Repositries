@@ -113,10 +113,10 @@ public static class ConfigureServices
 
     public struct DynamicServiceProviderInfo
     {
-        public string? BlobUri { get; set; }
+        public string? BlobUri { get; init; }
 
-        public string? TableUri { get; set; }
-        public string ServiceIdentifier { get; set; }
+        public string? TableUri { get; init; }
+        public string ServiceIdentifier { get; init; }
     }
     #endregion
 
