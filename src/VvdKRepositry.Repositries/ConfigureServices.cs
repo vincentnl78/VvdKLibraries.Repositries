@@ -30,14 +30,6 @@ public static class ConfigureServices
         //persistence does not have notifications, only repositories!
         services.AddSingleton<IGeneralBlobPersistence, GeneralBlobPersistence>();
         services.AddSingleton<IGeneralTablePersistence, GeneralTablePersistence>();
-        
-        /*services.AddWithNotifications<IGeneralBlobPersistence, GeneralBlobPersistence>(ServiceLifetime.Singleton,write
-            ? NotificationHandlerTypes.Commit | NotificationHandlerTypes.Unload | NotificationHandlerTypes.CreateGeneral | NotificationHandlerTypes.DeleteGeneral
-            : NotificationHandlerTypes.Unload
-            );
-        services.AddWithNotifications<IGeneralTablePersistence, GeneralTablePersistence>(ServiceLifetime.Singleton,write
-            ? NotificationHandlerTypes.Commit | NotificationHandlerTypes.Unload | NotificationHandlerTypes.CreateGeneral | NotificationHandlerTypes.DeleteGeneral
-            : NotificationHandlerTypes.Unload);*/
 
         services.AddAzureClients(cb =>
         {

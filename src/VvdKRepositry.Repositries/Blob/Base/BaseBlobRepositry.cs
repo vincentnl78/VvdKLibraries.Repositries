@@ -84,7 +84,7 @@ public abstract class BaseBlobRepositry(IBaseBlobPersistence persistence):IBlobR
 
     public  Task<string?> GetFileStringAsync(string filename, string directory)
     {
-        return persistence.GetFileStringAsync(ContainerName,filename,directory);
+        return persistence.GetTextAsync(ContainerName,filename,directory);
     }
     
     

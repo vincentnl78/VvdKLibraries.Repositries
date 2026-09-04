@@ -24,6 +24,6 @@ public interface IBaseBlobPersistence
 
     Task<Stream?> GetReadStreamAsync(string container,string path, string? directory = null);
     Task<T?> GetAsync<T>(string container,string filename, string? directory = null);
-    Task<string?> GetFileStringAsync(string container,string filename, string directory);
+    Task<string?> GetTextAsync(string container,string filename, string? directory);
     
 }

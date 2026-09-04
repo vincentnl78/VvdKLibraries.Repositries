@@ -7,6 +7,7 @@ using Azure.Storage.Blobs.Specialized;
 using Serilog;
 using VvdKRepositry.Repositries.Contracts.Blob.Base;
 
+
 namespace VvdKRepositry.Repositries.Blob.Base;
 
 public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializerOptions jsonSerializerOptions)
@@ -94,7 +95,7 @@ public abstract class BaseBlobPersistence(BlobServiceClient client, JsonSerializ
         await SaveStreamAsync(containername, ms, filename, directory);
     }
 
-    public async Task<string?> GetFileStringAsync(string containername, string filename, string directory)
+    public async Task<string?> GetTextAsync(string containername, string filename, string? directory)
     {
         var stream = await GetReadStreamAsync(containername, filename, directory);
         if (stream != null)

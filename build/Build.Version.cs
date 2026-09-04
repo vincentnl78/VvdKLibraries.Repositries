@@ -61,7 +61,7 @@ public partial class Build
         // Update ConsumerApp package reference to CoreLib with new version
         var doc = XDocument.Load(SourceDirectory/ repositryBuildParameters.ProjectFilePath);
         var pkgRef = doc.Descendants("PackageReference")
-            .FirstOrDefault(x => x.Attribute("Include")?.Value == referenceProjectBuildParameters.PackageName);
+            .FirstOrDefault(x => x.Attribute("Include")?.Value.ToLower() == referenceProjectBuildParameters.PackageName.ToLower());
 
         if (pkgRef == null)
             throw new Exception(
