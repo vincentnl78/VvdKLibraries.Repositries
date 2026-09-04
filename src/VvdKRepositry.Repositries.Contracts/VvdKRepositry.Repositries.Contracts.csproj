@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <Authors>Vincent van der Kruit</Authors>
     <PackageId>VvdKLibraries.AzureRepositries.Contracts</PackageId>
-    <Version>1.1.233</Version>
+    <Version>1.1.250</Version>
     <RepositoryUrl>https://github.com/vincentnl78/VvdKLibraries.Repositries</RepositoryUrl>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -14,8 +14,8 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Data.Tables" Version="12.11.0" />
-    <PackageReference Include="MediatR" Version="14.1.0" />
+    <PackageReference Include="Azure.Data.Tables" Version="12.12.0" />
+    <PackageReference Include="MediatR" Version="14.2.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="readme.md" Pack="true" PackagePath="" />

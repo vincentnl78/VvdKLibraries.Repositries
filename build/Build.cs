@@ -11,8 +11,14 @@ using Nuke.Common.Tools.DotNet;
 partial class Build : NukeBuild
 {
     public static int Main () => Execute<Build>(
-        x=> x.Publish_RepositriesContracts,
-        x=> x.Publish_Repositries
+       x=>x.Publish_RepositriesContracts,
+       x=> x.Publish_Repositries,
+       x=>x.Publish_AuthObjects,
+        x=>x.Publish_AuthInterfaces,
+       x=>x.Publish_AuthRepositries,
+       x=>x.Publish_AuthServices,
+       x=>x.Publish_EventPublisherInterfaces,
+       x=>x.Publish_EventPublisher
         );
     
     [Parameter("Configuration to build - Default is 'Debug' (local) or 'Release' (server)")]
@@ -76,7 +82,6 @@ partial class Build : NukeBuild
         DotNetTasks.DotNetBuild(s => s
             .SetProjectFile(SourceDirectory / buildParameters.ProjectFilePath)
             .SetConfiguration(Configuration)
-            //.SetOutputDirectory(BuildOutputDirectory / buildParameters.PackageName)
             .EnableNoRestore()
             .EnableNoLogo()
             .EnableNoIncremental()

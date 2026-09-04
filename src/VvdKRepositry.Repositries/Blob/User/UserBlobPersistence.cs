@@ -118,6 +118,6 @@ public class UserBlobPersistence<TStorageParameterProvider>(
 
     public  Task<string?> GetFileStringAsync(string filename, string directory)
     {
-        return base.GetFileStringAsync(idProvider.BlobContainerName, filename, directory);
+        return base.GetTextAsync(idProvider.BlobContainerName, filename, directory);
     }
 }

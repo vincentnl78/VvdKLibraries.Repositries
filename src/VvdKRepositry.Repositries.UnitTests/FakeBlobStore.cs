@@ -99,7 +99,7 @@ public class FakeBlobStore : IGeneralBlobPersistence
         throw new NotImplementedException();
     }
 
-    public Task<string?> GetFileStringAsync(string container, string filename, string directory)
+    public Task<string?> GetTextAsync(string container, string filename, string directory)
     {
         throw new NotImplementedException();
     }
